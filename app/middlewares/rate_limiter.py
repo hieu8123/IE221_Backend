@@ -5,7 +5,7 @@ from time import time
 visit_log = {}
 
 # Cấu hình giới hạn
-RATE_LIMIT = 5  # Số yêu cầu tối đa
+RATE_LIMIT = 100000  # Số yêu cầu tối đa
 TIME_FRAME = 60  # Thời gian giới hạn (giây)
 
 def limit_requests():

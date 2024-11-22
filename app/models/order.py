@@ -15,6 +15,7 @@ class Order(db.Model):
     # Relationships
     details = db.relationship('OrderDetail', back_populates='order', cascade="all, delete-orphan")
     user = db.relationship('User', back_populates='orders')
+    refund_request = db.relationship('RefundRequest', back_populates='order')
 
 
 class OrderDetail(db.Model):

@@ -38,6 +38,15 @@ class OrderService:
         return None
     
     @staticmethod
+    def update_transaction_id(transaction_id, order_id):
+        order = Order.query.get(order_id)
+        if order:
+            order.transaction_id = transaction_id
+            order.updated_at = datetime.utcnow()
+            db.session.commit()
+            return order
+    
+    @staticmethod
     def update_order_status(order_id, status):
         order = Order.query.get(order_id)
         if order:

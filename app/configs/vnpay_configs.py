@@ -8,4 +8,4 @@ class VNPAYConfig:
     VNP_TMNCODE = os.getenv("VNP_TMNCODE")  # Merchant ID
     VNP_HASHSECRET = os.getenv("VNP_HASHSECRET")  # Secret Key
     VNP_URL = os.getenv("VNP_URL")  # URL Payment Gateway
-    VNP_RETURNURL = os.getenv("VNP_RETURNURL")  # URL Callback
+    VNP_RETURN_URL = os.getenv("VNP_RETURN_URL")  # URL Callback

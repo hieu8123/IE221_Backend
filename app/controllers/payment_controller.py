@@ -119,10 +119,10 @@ def approve_refund(refund_id):
         return jsonify({'message': 'This refund request is already processed'}), 400
     
     # Thực hiện hoàn tiền qua VNPAY
-    refund_result = VNPayService.create_refund(refund_request.order.transaction_id, refund_request.order_id, refund_request.order.total, refund_request.reason)
+    refund_result = VNPayService.create_refund(refund_request.order, refund_request.order.total, refund_request.reason)
     
     if refund_result is None:
-        return jsonify({'message': 'Refund failed, please try again later'}), 500
+        return jsonify({'message': 'Refund failed, please try again later(the result is None)'}), 500
 
     if refund_result.get('vnp_ResponseCode') == '00':
         # Nếu hoàn tiền thành công
@@ -132,6 +132,5 @@ def approve_refund(refund_id):
         return jsonify({'message': 'Refund request approved and order refunded'}), 200
     else:
         # Nếu hoàn tiền thất bại
-        RefundService.update_refund_request_status(refund_id, 'rejected')
         return jsonify({'message': 'Refund failed, please try again later'}), 500
 

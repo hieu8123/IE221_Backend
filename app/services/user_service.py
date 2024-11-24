@@ -4,7 +4,7 @@ from datetime import datetime
 
 class UserService:
     @staticmethod
-    def create_user(email, password, name, role, avatar, phone):
+    def create_user(email, password, name, role, avatar=None, phone=None):
         new_user = User(
             email=email,
             password=password,

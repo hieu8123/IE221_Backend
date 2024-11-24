@@ -6,6 +6,7 @@ from app.controllers.auth_controller import auth_blueprint
 from app.controllers.test_controller import test_blueprint
 from app.controllers.product_controller import product_blueprint
 from app.controllers.payment_controller import payment_blueprint
+from app.controllers.categories_controller import category_blueprint
 from app.middlewares.rate_limiter import limit_requests
 
 def create_app():
@@ -29,4 +30,6 @@ def create_app():
     app.register_blueprint(test_blueprint, url_prefix='/test')
     app.register_blueprint(product_blueprint, url_prefix='/product')
     app.register_blueprint(payment_blueprint, url_prefix='/payment')
+    app.register_blueprint(category_blueprint, url_prefix='/category')
+    
     return app

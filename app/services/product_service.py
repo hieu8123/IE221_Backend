@@ -45,7 +45,7 @@ class ProductService:
         # Tìm kiếm theo tên sản phẩm
         if name:
             name = name.strip().lower()
-            query = query.filter(func.Lower(name)).like(f"%{name}%")
+            query = query.filter(func.lower(Product.name).like(f"%{name}%"))
 
         # Lọc theo các điều kiện khác
         for key, value in kwargs.items():

@@ -72,7 +72,6 @@ def vnpay_callback():
         OrderService.update_order_status(order_id, 'error')
         return jsonify({'status': 'FAILED', 'message': f'Transaction failed({response_code})'}), 400
     except Exception as e:
-        print(vnpay_params)
         print(e)
         return jsonify({'status': 'FAILED', 'message': str(e)}), 500
     

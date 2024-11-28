@@ -1,4 +1,4 @@
-from configs.database_configs import db
+from app.configs.database_configs import db
 from app.models.banner import Banner
 from datetime import datetime
 

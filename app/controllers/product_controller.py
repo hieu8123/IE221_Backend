@@ -42,6 +42,7 @@ def get_products():
         'page': products_paginated.page,
         'per_page': products_paginated.per_page,
         'total': products_paginated.total,
+        'total_pages': products_paginated.pages,
         'products': [
             product.to_dict() 
             for product in products_paginated.items

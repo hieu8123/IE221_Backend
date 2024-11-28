@@ -89,7 +89,7 @@ class AuthService:
             return None, 'Invalid password'
         
         token = AuthService.create_jwt(user.id, user.name, user.role)
-        return token, None
+        return user, token, None
     
     @staticmethod
     def logout(response):

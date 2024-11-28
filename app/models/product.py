@@ -26,13 +26,14 @@ class Product(db.Model):
     order_details = db.relationship('OrderDetail', back_populates='product', cascade="all, delete-orphan")
 
     def to_dict(self):
+        images = self.image.split(',') if self.image else []
         return {'id': self.id,
                 'name': self.name,
                 'category': self.category.name,
                 'brand': self.brand.name,
                 'price': self.price,
                 'oldprice': self.oldprice,
-                'image': self.image,
+                'images': images ,
                 'description': self.description,
                 'specification': self.specification,
                 'buyturn': self.buyturn,

@@ -11,10 +11,12 @@ def token_required(func):
     def decorated_function(*args, **kwargs):
         # Kiểm tra JWT trong cookie
         decoded, error = AuthService.decode_jwt_from_cookie()
-
         
         if error:
             return jsonify({'message': error}), 401  # Trả về lỗi nếu không có token hoặc token không hợp lệ
+        
+        if decoded.get('exp') < datetime.utcnow().timestamp():
+            return jsonify({'message': 'Token has expired!'}), 401
         
         user_id = decoded.get('id')
         user = UserService.get_user_by_id(user_id)
@@ -27,6 +29,27 @@ def token_required(func):
 
     return decorated_function
 
+# Hàm kiểm tra người dùng chưa đăng nhập
+def none_oken_required(func):
+    """Wrapper để kiểm tra JWT trong cookie của request."""
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        # Kiểm tra JWT trong cookie
+        decoded, error = AuthService.decode_jwt_from_cookie()
+
+        if error or decoded.get('exp') < datetime.utcnow().timestamp():
+            func(*args, **kwargs)  
+        
+        user_id = decoded.get('id')
+        user = UserService.get_user_by_id(user_id)
+
+        if not user:
+            return func(*args, **kwargs)
+            
+        return jsonify({'message': 'User logged in'}), 409 
+
+    return decorated_function
+
 # Hàm kiểm tra vai trò là admin
 def admin_required(f):
     @wraps(f)
@@ -36,6 +59,9 @@ def admin_required(f):
 
         if error:
             return jsonify({'message': error}), 401  # Trả về lỗi nếu không có token hoặc token không hợp lệ
+        
+        if decoded.get('exp') < datetime.utcnow().timestamp():
+            return jsonify({'message': 'Token has expired!'}), 401
         
         user_id = decoded.get('id')
         user = UserService.get_user_by_id(user_id)

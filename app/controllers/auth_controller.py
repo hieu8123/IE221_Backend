@@ -16,12 +16,13 @@ def login():
         return jsonify({'message': 'Username and password are required'}), 400
 
     # Kiểm tra thông tin đăng nhập
-    token, error = AuthService.login(email, password)
+    user, token, error = AuthService.login(email, password)
     if error:
         return jsonify({'message': error}), 401
     
     # Tạo response
-    response = make_response(jsonify({'message': 'Login successful'}), 200)
+    response = make_response(jsonify({'message': 'Login successful',
+                                      'user': {'id': user.id, 'name': user.name, 'role': user.role}}), 200)
     AuthService.add_jwt_to_cookie(response, token)
 
     return response
@@ -55,7 +56,8 @@ def register():
     
     token = AuthService.create_jwt(new_user.id, new_user.name, new_user.role)
 
-    response = make_response(jsonify({'message': 'Register successful'}), 201)
+    response = make_response(jsonify({'message': 'Register successful',
+                                      'user': {'id': new_user.id,'name': new_user.name, 'role': new_user.role}}), 201)
     AuthService.add_jwt_to_cookie(response, token)
 
     return response

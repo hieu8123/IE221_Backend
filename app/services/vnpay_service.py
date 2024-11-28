@@ -2,12 +2,12 @@ from datetime import datetime
 import hashlib
 import hmac
 import urllib.parse
-from flask import redirect
 import requests
 from app.configs.vnpay_configs import VNPAYConfig
 import unicodedata
 import json
-
+import random
+from flask import request
 
 class VNPayService:
     @staticmethod
@@ -96,53 +96,73 @@ class VNPayService:
         return new_secure_hash == secure_hash
 
     @staticmethod
-    def     create_refund(transaction_id, order_id, refund_amount, reason):
+    def create_refund(order, refund_amount, reason):
         """Gửi yêu cầu hoàn tiền qua VNPAY."""
-        vnp_command = "refund"
-        vnp_version = "2.1.0"
-        vnp_curr_code = "VND"
-        vnp_tmn_code = VNPAYConfig.VNP_TMNCODE  # Mã merchant
-        vnp_hash_secret = VNPAYConfig.VNP_HASHSECRET  # Secret Key
-        vnp_api_url = VNPAYConfig.VNP_URL  # API Refund URL
+        n = random.randint(10**11, 10**12 - 1)
+        n_str = str(n)
+        while len(n_str) < 12:
+            n_str = '0' + n_str
+        url = VNPAYConfig.VNP_API_URL
+        secret_key = VNPAYConfig.VNP_HASHSECRET
+        vnp_TmnCode = VNPAYConfig.VNP_TMNCODE
+        vnp_RequestId = n_str
+        vnp_Version = '2.1.0'
+        vnp_Command = 'refund'
+        vnp_TransactionType = '03'
+        vnp_TxnRef = order.id
+        vnp_Amount = int(order.total)  # Đổi sang đơn vị VNĐ
+        vnp_OrderInfo = order.note
+        vnp_TransactionNo = order.transaction_id
+        vnp_TransactionDate = order.created_at.strftime('%Y%m%d%H%M%S')
+        vnp_CreateDate = datetime.now().strftime('%Y%m%d%H%M%S')
+        vnp_CreateBy = 'admin'
+        vnp_IpAddr = request.remote_addr
+
+        print(vnp_Amount)
+
+        hash_data = "|".join([
+        str(vnp_RequestId), str(vnp_Version), str(vnp_Command), str(vnp_TmnCode), 
+        str(vnp_TransactionType), str(vnp_TxnRef), str(vnp_Amount), str(vnp_TransactionNo), 
+        str(vnp_TransactionDate), str(vnp_CreateBy), str(vnp_CreateDate), 
+        str(vnp_IpAddr), str(vnp_OrderInfo)
+        ])
+
+
+        secure_hash = hmac.new(secret_key.encode(), hash_data.encode(), hashlib.sha512).hexdigest()
 
         reason =  unicodedata.normalize('NFKD', reason)
         reason = ''.join([c for c in reason if not unicodedata.combining(c)])
 
-        # Tạo dữ liệu refund
-        vnp_params = {
-            "vnp_Command": vnp_command,
-            "vnp_Version": vnp_version,
-            "vnp_TmnCode": vnp_tmn_code,
-            "vnp_TxnRef": order_id,  # Mã đơn hàng
-            "vnp_TransactionType": 'refund',  # Loại giao dịch: Refund
-            "vnp_TransactionNo": transaction_id,  # Mã giao dịch của VNPAY
-            "vnp_Amount": int(refund_amount) * 100,  # Số tiền hoàn (nhân 100)
-            "vnp_OrderInfo": reason,
-            "vnp_RequestId": datetime.now().strftime("%Y%m%d%H%M%S"),
-            "vnp_IpAddr": "127.0.0.1",  # IP của server thực hiện refund
-            "vnp_CreateDate": datetime.now().strftime("%Y%m%d%H%M%S"),
+        data = {
+        "vnp_RequestId": vnp_RequestId,
+        "vnp_TmnCode": vnp_TmnCode,
+        "vnp_Command": vnp_Command,
+        "vnp_TxnRef": vnp_TxnRef,
+        "vnp_Amount": vnp_Amount,
+        "vnp_OrderInfo": vnp_OrderInfo,
+        "vnp_TransactionDate": vnp_TransactionDate,
+        "vnp_CreateDate": vnp_CreateDate,
+        "vnp_IpAddr": vnp_IpAddr,
+        "vnp_TransactionType": vnp_TransactionType,
+        "vnp_TransactionNo": vnp_TransactionNo,
+        "vnp_CreateBy": vnp_CreateBy,
+        "vnp_Version": vnp_Version,
+        "vnp_SecureHash": secure_hash
         }
-
         # Sắp xếp và tạo chữ ký
-        sorted_params = sorted(vnp_params.items())
-        query_string = ''
-        seq = 0
-        for key, val in sorted_params:
-                    if seq == 1:
-                        query_string = query_string + "&" + key + '=' + urllib.parse.quote_plus(str(val))
-                    else:
-                        seq = 1
-                        query_string = key + '=' + urllib.parse.quote_plus(str(val))
+        headers = {"Content-Type": "application/json"}
 
-        signature = VNPayService.__hmacsha512(VNPAYConfig.VNP_HASHSECRET, query_string)
-        vnp_params['vnp_SecureHash'] = signature
-
-        # Gửi request đến API của VNPAY
         try:
-            response = requests.post(vnp_api_url, json=vnp_params)
-            response.raise_for_status()  # Kiểm tra lỗi HTTP
-            response_json = response.json()  # Phân tích dữ liệu trả về
-        except requests.exceptions.RequestException as e:
-            response_json = {"error": f"Request failed: {str(e)}"}
+            response = requests.post(url, headers=headers, data=json.dumps(data))
 
-        return response_json
+            print(response.text)
+
+            if response.status_code == 200:
+                response_json = json.loads(response.text)
+            else:
+                response_json = {"error": f"Request failed with status code: {response.status_code}"}
+
+            return response_json
+        except Exception as e:
+            print(e)
+            return {"error": str(e)}

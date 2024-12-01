@@ -24,11 +24,12 @@ class Product(db.Model):
     feedbacks = db.relationship('Feedback', back_populates='product', cascade="all, delete-orphan")
     news = db.relationship('News', back_populates='product', cascade="all, delete-orphan")
     order_details = db.relationship('OrderDetail', back_populates='product', cascade="all, delete-orphan")
+    carts = db.relationship('Cart', back_populates='product', cascade="all, delete-orphan")
 
     def to_dict(self):
         images = self.image.split(',') if self.image else []
         return {'id': self.id,
-                'name': self.name,
+                'name': self.name,  
                 'category': self.category.name,
                 'brand': self.brand.name,
                 'price': self.price,

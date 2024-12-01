@@ -6,6 +6,7 @@ from .order import Order, OrderDetail
 from .user import User
 from .news import News
 from .brand import Brand
+from .cart import Cart
 
 __all__ = [
     'Banner',
@@ -16,5 +17,6 @@ __all__ = [
     'OrderDetail',
     'User',
     'News',
-    'Brand'
+    'Brand',
+    'Cart'
 ]

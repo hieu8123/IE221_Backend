@@ -35,28 +35,15 @@ class AuthService:
         """Thêm JWT vào cookie của response"""
         # Thêm token vào cookie
 
-        response.headers.add(
-            'Set-Cookie',
-            f'ie221_access_token={token}; '
-            f'Path=/; '
-            f'Max-Age=3600; '
-            f'Expires={datetime.datetime.utcnow() + datetime.timedelta(hours=1)}; '
-            f'HttpOnly; '
-            f'SameSite=None; '
-            f'Secure; '
-            f'Partitioned'
+        response.set_cookie(
+            'ie221_access_token',  # Tên cookie
+            token,           # Giá trị cookie (JWT token)
+            max_age=datetime.timedelta(hours=1),  # Thời gian sống của cookie (1 giờ)
+            expires=datetime.datetime.utcnow() + datetime.timedelta(hours=1),  # Thời gian hết hạn của cookie
+            secure=True,     # Chỉ gửi cookie qua kết nối HTTPS
+            httponly=True,   # Chỉ có thể truy cập cookie từ server, không thể từ JavaScript
+            samesite='None' # Cho phép sử dụng cookie trong cross-site
         )
-
-
-        # response.set_cookie(
-        #     'ie221_access_token',  # Tên cookie
-        #     token,           # Giá trị cookie (JWT token)
-        #     max_age=datetime.timedelta(hours=1),  # Thời gian sống của cookie (1 giờ)
-        #     expires=datetime.datetime.utcnow() + datetime.timedelta(hours=1),  # Thời gian hết hạn của cookie
-        #     secure=True,     # Chỉ gửi cookie qua kết nối HTTPS
-        #     httponly=True,   # Chỉ có thể truy cập cookie từ server, không thể từ JavaScript
-        #     samesite='None' # Cho phép sử dụng cookie trong cross-site
-        # )
         
         return response
 

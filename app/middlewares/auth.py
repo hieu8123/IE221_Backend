@@ -30,7 +30,7 @@ def token_required(func):
     return decorated_function
 
 # Hàm kiểm tra người dùng chưa đăng nhập
-def none_oken_required(func):
+def none_token_required(func):
     """Wrapper để kiểm tra JWT trong cookie của request."""
     @wraps(func)
     def decorated_function(*args, **kwargs):

@@ -26,12 +26,11 @@ class OrderService:
         return Order.query.get(order_id)
 
     @staticmethod
-    def update_order(order_id, status, note, total):
+    def update_order(order_id, status=None, note=None):
         order = Order.query.get(order_id)
         if order:
-            order.status = status
-            order.note = note
-            order.total = total
+            order.status = status or order.status
+            order.note = note or order.note
             order.updated_at = datetime.utcnow()
             db.session.commit()
             return order
@@ -60,6 +59,8 @@ class OrderService:
     def delete_order(order_id):
         order = Order.query.get(order_id)
         if order:
+            for order_detail in order.order_details:
+                db.session.delete(order_detail)
             db.session.delete(order)
             db.session.commit()
             return True

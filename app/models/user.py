@@ -18,6 +18,7 @@ class User(db.Model):
     # Relationships
     feedbacks = db.relationship('Feedback', back_populates='user', cascade="all, delete-orphan")
     orders = db.relationship('Order', back_populates='user', cascade="all, delete-orphan")
+    carts = db.relationship('Cart', back_populates='user', cascade="all, delete-orphan")
 
     def to_dict(self):
         return {

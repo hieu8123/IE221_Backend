@@ -57,7 +57,7 @@ def register():
     token = AuthService.create_jwt(new_user.id, new_user.name, new_user.role)
 
     response = make_response(jsonify({'message': 'Register successful',
-                                      'user': {'id': new_user.id,'name': new_user.name, 'role': new_user.role}}), 201)
+                                      'user': {'id': new_user.id,'name': new_user.name, 'role': new_user.role}}), 200)
     AuthService.add_jwt_to_cookie(response, token)
 
     return response

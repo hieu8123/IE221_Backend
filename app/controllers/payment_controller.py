@@ -4,6 +4,8 @@ from app.services.vnpay_service import VNPayService
 from app.services.order_service import OrderService
 from app.services.refund_service import RefundService
 from app.services.auth_serivce import AuthService
+from app.services.product_service import ProductService
+from app.services.cart_service import CartService
 
 payment_blueprint = Blueprint("payment", __name__)
 
@@ -20,7 +22,6 @@ def create_payment():
     order_info = data.get("order_info")
     client_ip = request.remote_addr
 
-    print(client_ip)
 
     if user_id != AuthService.decode_jwt_from_cookie()[0]['id']:
         return jsonify({"error": "Unauthorized"}), 403
@@ -35,9 +36,10 @@ def create_payment():
         order = OrderService.get_order_by_id(order_id)
     else:
         order = OrderService.create_order(user_id = user_id, status="pending",note="Thanh toan don hang Hieu Store" ,total=total_amount )
+        CartService.clear_user_cart(user_id)
         for product in products:
             OrderService.create_order_detail(order.id, product.get("product_id"), product.get("price"), product.get("quantity"))
-    
+            ProductService.update_product_quantity_and_buyturn(product.get("product_id"), product.get("quantity"))
     # Tạo URL thanh toán
     try:
         payment_url = VNPayService.create_payment_url(order.id,order.total, order.note, client_ip)
@@ -54,7 +56,6 @@ def vnpay_callback():
 
         # Kiểm tra chữ ký
         is_valid_signature = VNPayService.verify_signature(vnpay_params, secure_hash)
-        print(is_valid_signature)
         if not is_valid_signature:
             OrderService.update_order_status(order_id, 'error')
             return jsonify({'success': False, 'message': 'Invalid signature'}), 400

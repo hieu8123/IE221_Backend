@@ -8,13 +8,16 @@ from app.controllers.product_controller import product_blueprint
 from app.controllers.payment_controller import payment_blueprint
 from app.controllers.categories_controller import category_blueprint
 from app.controllers.banner_controller import banner_blueprint
+from app.controllers.brand_controller import brand_blueprint
+from app.controllers.cart_controller import cart_blueprint
 from app.middlewares.rate_limiter import limit_requests
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    CORS(app, supports_credentials=True)
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:3000"}})
+
 
     # Initialize database
     init_database(app)
@@ -33,5 +36,7 @@ def create_app():
     app.register_blueprint(payment_blueprint, url_prefix='/payment')
     app.register_blueprint(category_blueprint, url_prefix='/category')
     app.register_blueprint(banner_blueprint, url_prefix='/banners')
+    app.register_blueprint(brand_blueprint, url_prefix='/brand')
+    app.register_blueprint(cart_blueprint, url_prefix='/cart')
 
     return app

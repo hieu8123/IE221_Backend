@@ -4,11 +4,15 @@ from datetime import datetime
 
 class OrderService:
     @staticmethod
-    def create_order(user_id, status, note, total):
+    def create_order(user_id, note, total, status='pending',name=None, phone=None, email=None, address_id=None):
         new_order = Order(
             user_id=user_id,
             status=status,
+            name=name,
+            phone=phone,
+            email=email,
             note=note,
+            address_id=address_id,
             total=total,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()

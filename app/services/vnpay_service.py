@@ -26,13 +26,11 @@ class VNPayService:
         - client_ip: Địa chỉ IP của client.
         """
                 # Chuỗi cần chuyển
-        date_str = "20241122173015"
-
-        # Chuyển chuỗi thành đối tượng datetime
-        date_obj = datetime.strptime(date_str, "%Y%m%d%H%M%S")
+        # Lấy thời gian hiện tại
+        current_time = datetime.now()
 
         # Sử dụng strftime để chuyển đối tượng datetime thành chuỗi có định dạng mong muốn
-        formatted_date = date_obj.strftime("%Y%m%d%H%M%S")
+        formatted_date = current_time.strftime("%Y%m%d%H%M%S")
 
         params = {
             "vnp_Version": "2.1.0",

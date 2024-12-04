@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, redirect
 from app.middlewares.auth import token_required, admin_required
 from app.services.vnpay_service import VNPayService
 from app.services.order_service import OrderService
@@ -6,6 +6,8 @@ from app.services.refund_service import RefundService
 from app.services.auth_serivce import AuthService
 from app.services.product_service import ProductService
 from app.services.cart_service import CartService
+from app.services.address_service import AddressService
+from app.configs.vnpay_configs import VNPAYConfig
 
 payment_blueprint = Blueprint("payment", __name__)
 
@@ -17,29 +19,54 @@ def create_payment():
     """
     data = request.json
     order_id = data.get("order_id")
-    user_id = data.get("user_id")
-    products = data.get("products", [])
+    cart_items = data.get("cartItems", [])
+    name = data.get("name")
+    phone = data.get("phone")
+    email = data.get("email")
     order_info = data.get("order_info")
+    address = data.get("address")
     client_ip = request.remote_addr
+   
 
+    user_id = AuthService.decode_jwt_from_cookie()[0]['id']
 
-    if user_id != AuthService.decode_jwt_from_cookie()[0]['id']:
-        return jsonify({"error": "Unauthorized"}), 403
-
-    if not all([user_id, products, order_info]):
+    if not all([cart_items]):
         return jsonify({"error": "Missing required parameters"}), 400
     
     # Tính tổng số tiền cần thanh toán
-    total_amount = sum(product.get("price", 0) * product.get("quantity", 1) for product in products)
+    total_amount = sum(
+        (cart_item.get('product') or {}).get("price", 0) * cart_item.get("quantity", 1)
+        for cart_item in cart_items
+    )
+
+    if address.get("id"):
+        address_id = address.get("id")
+        address = AddressService.get_address_by_id(address_id)
+        if not address:
+            return jsonify({'error': 'Address not found'}), 404
+    else:
+        address_id = AddressService.create_address(user_id, 
+                                                    address.get("address_line"), 
+                                                    address.get("city"), 
+                                                    address.get("country"),
+                                                    address.get("postal_code"),
+                                                    address.get("note")).id
 
     if order_id:
         order = OrderService.get_order_by_id(order_id)
     else:
-        order = OrderService.create_order(user_id = user_id, status="pending",note="Thanh toan don hang Hieu Store" ,total=total_amount )
+        order = OrderService.create_order(user_id = user_id, 
+                                          status="pending payment",
+                                          note="Thanh toan don hang Hieu Store" ,
+                                          name= name,
+                                          phone=phone,
+                                          email=email,
+                                          address_id=address_id,
+                                          total=total_amount )
         CartService.clear_user_cart(user_id)
-        for product in products:
-            OrderService.create_order_detail(order.id, product.get("product_id"), product.get("price"), product.get("quantity"))
-            ProductService.update_product_quantity_and_buyturn(product.get("product_id"), product.get("quantity"))
+        for product in [cart_item.get('product') for cart_item in cart_items]:
+            OrderService.create_order_detail(order.id, product.get("id"), product.get("price"), product.get("quantity"))
+            ProductService.update_product_quantity_and_buyturn(product.get("id"), product.get("quantity"))
     # Tạo URL thanh toán
     try:
         payment_url = VNPayService.create_payment_url(order.id,order.total, order.note, client_ip)
@@ -68,13 +95,13 @@ def vnpay_callback():
         if response_code == '00':
             OrderService.update_order_status(order_id, 'paid')
             OrderService.update_transaction_id(transaction_id, order_id)
-            return jsonify({'status': 'SUCCESS', 'message': 'Transaction successful'})
+            return redirect(f"{VNPAYConfig.FRONTEND_URL}/check-out/success?order_id={order_id}&status=SUCCESS")
         
         OrderService.update_order_status(order_id, 'error')
-        return jsonify({'status': 'FAILED', 'message': f'Transaction failed({response_code})'}), 400
+        return redirect(f"{VNPAYConfig.FRONTEND_URL}/check-out/fail?order_id={order_id}&status=FAILED&response_code={response_code}")
     except Exception as e:
         print(e)
-        return jsonify({'status': 'FAILED', 'message': str(e)}), 500
+        return redirect(f"{VNPAYConfig.FRONTEND_URL}/check-out/fail?order_id={order_id}&status=FAILED&response_code=99")
     
 @payment_blueprint.route('/vnpay/request_refund', methods=['POST'])
 @token_required

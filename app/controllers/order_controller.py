@@ -4,7 +4,7 @@ from app.services.auth_serivce import AuthService
 from app.services.product_service import ProductService
 from app.middlewares.auth import token_required, admin_required
 from app.services.cart_service import CartService
-
+from app.services.address_service import AddressService
 
 # Tạo Blueprint cho module auth
 order_blueprint = Blueprint('order', __name__)
@@ -70,24 +70,48 @@ def create_order():
     """ API để tạo hóa đơn mới """
     user_id = AuthService.decode_jwt_from_cookie()[0]['id']
     data = request.json
-    user_id = data.get("user_id")
-    products = data.get("products", [])
+    cart_items = data.get("cartItems", [])
+    name = data.get("name")
+    phone = data.get("phone")
+    email = data.get("email")
     order_info = data.get("order_info")
+    address = data.get("address")
 
-    total_amount = sum(product.get("price", 0) * product.get("quantity", 1) for product in products)
+    total_amount = sum(
+    (cart_item.get('product') or {}).get("price", 0) * cart_item.get("quantity", 1)
+    for cart_item in cart_items
+)
+
+    new_address = None
+
+    if address.get("id"):
+        address_id = address.get("id")
+        new_address = AddressService.get_address_by_id(address_id)
+        if not new_address:
+            return jsonify({'error': 'Address not found'}), 404
+    else:
+        new_address = AddressService.create_address(user_id, 
+                                                    address.get("address_line"), 
+                                                    address.get("city"), 
+                                                    address.get("country"),
+                                                    address.get("postal_code"))
 
     new_order = OrderService.create_order(
         user_id=user_id,
-        products=products,
-        order_info=order_info,
+        name=name,
+        phone=phone,
+        email=email,
+        status="paid",
+        note=order_info,
+        address_id=new_address.id,
         total=total_amount,
     )
 
     CartService.clear_user_cart(user_id)
 
-    for product in products:
-        OrderService.create_order_detail(new_order.id, product.get("product_id"), product.get("price"), product.get("quantity"))
-        ProductService.update_product_quantity_and_buyturn(product.get("product_id"), product.get("quantity"))
+    for product in [cart_item.get('product') for cart_item in cart_items]:
+        OrderService.create_order_detail(new_order.id, product.get("id"), product.get("price"), product.get("quantity"))
+        ProductService.update_product_quantity_and_buyturn(product.get("id"), product.get("quantity"))
 
     if new_order:
         return jsonify({
@@ -99,7 +123,7 @@ def create_order():
             'created_at': new_order.created_at,
             'updated_at': new_order.updated_at,
             'transaction_id': new_order.transaction_id,
-        }), 201
+        }), 200
     return jsonify({'error': 'Create order failed'}), 400
 
 @order_blueprint.route('/<int:order_id>/update', methods=['PUT'])

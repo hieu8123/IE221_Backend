@@ -10,6 +10,7 @@ from app.controllers.categories_controller import category_blueprint
 from app.controllers.banner_controller import banner_blueprint
 from app.controllers.brand_controller import brand_blueprint
 from app.controllers.cart_controller import cart_blueprint
+from app.controllers.order_controller import order_blueprint
 from app.middlewares.rate_limiter import limit_requests
 
 def create_app():
@@ -38,5 +39,6 @@ def create_app():
     app.register_blueprint(banner_blueprint, url_prefix='/banners')
     app.register_blueprint(brand_blueprint, url_prefix='/brand')
     app.register_blueprint(cart_blueprint, url_prefix='/cart')
+    app.register_blueprint(order_blueprint, url_prefix='/order')
 
     return app

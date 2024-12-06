@@ -70,10 +70,10 @@ class AuthService:
         """Xác thực thông tin đăng nhập và trả về JWT nếu hợp lệ"""
         user = User.query.filter_by(email=email).first()
         if not user:
-            return None, 'User not found'
+            return None, None, 'User not found'
         
         if not check_password_hash(user.password, password):
-            return None, 'Invalid password'
+            return None, None, 'Invalid password'
         
         token = AuthService.create_jwt(user.id, user.name, user.role)
         return user, token, None

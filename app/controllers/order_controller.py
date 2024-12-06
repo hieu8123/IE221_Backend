@@ -13,13 +13,20 @@ order_blueprint = Blueprint('order', __name__)
 @admin_required
 def get_all_orders():
     """ API để lấy danh sách các hóa đơn """
-    orders = OrderService.get_all_orders()
+    page = int(request.args.get('page', 1))  # Mặc định là trang 1
+    per_page = int(request.args.get('per_page', 10))
+    orders = OrderService.get_all_orders_page(page, per_page)
     return jsonify([{
         'id': order.id,
         'user_id': order.user_id,
         'status': order.status,
         'note': order.note,
         'total': order.total,
+        'order_details': [{
+                'product_id': order_detail.product_id,
+                'price': order_detail.price,
+                'quantity': order_detail.quantity,
+            } for order_detail in order.order_details],
         'created_at': order.created_at,
         'updated_at': order.updated_at,
         'transaction_id': order.transaction_id,
@@ -41,6 +48,11 @@ def get_order(order_id):
             'status': order.status,
             'note': order.note,
             'total': order.total,
+            'order_details': [{
+                'product_id': order_detail.product_id,
+                'price': order_detail.price,
+                'quantity': order_detail.quantity,
+            } for order_detail in order.order_details],
             'created_at': order.created_at,
             'updated_at': order.updated_at,
             'transaction_id': order.transaction_id,
@@ -52,13 +64,20 @@ def get_order(order_id):
 def get_user_orders():
     """ API để lấy danh sách các hóa đơn của user """
     user_id = AuthService.decode_jwt_from_cookie()[0]['id']
-    orders = OrderService.get_orders_by_user_id(user_id)
+    page = int(request.args.get('page', 1))  # Mặc định là trang 1
+    per_page = int(request.args.get('per_page', 10))  
+    orders = OrderService.get_orders_by_user_id_paginated(user_id, page, per_page)
     return jsonify([{
         'id': order.id,
         'user_id': order.user_id,
         'status': order.status,
         'note': order.note,
         'total': order.total,
+        'order_details': [{
+            'product_id': order_detail.product_id,
+            'price': order_detail.price,
+            'quantity': order_detail.quantity,
+        } for order_detail in order.order_details],
         'created_at': order.created_at,
         'updated_at': order.updated_at,
         'transaction_id': order.transaction_id,

@@ -89,6 +89,9 @@ def vnpay_callback():
         
         response_code = vnpay_params.get('vnp_ResponseCode')
         transaction_id = vnpay_params.get('vnp_TransactionNo')
+        order = OrderService.get_order_by_id(order_id)
+        user_id = order.user_id
+        CartService.clear_user_cart(user_id)
 
 
         # Kiểm tra mã phản hồi từ VNPAY (00 là thanh toán thành công)

@@ -11,6 +11,7 @@ from app.controllers.banner_controller import banner_blueprint
 from app.controllers.brand_controller import brand_blueprint
 from app.controllers.cart_controller import cart_blueprint
 from app.controllers.order_controller import order_blueprint
+from app.controllers.user_controller import user_blueprint
 from app.middlewares.rate_limiter import limit_requests
 
 def create_app():
@@ -33,6 +34,7 @@ def create_app():
 
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
     app.register_blueprint(test_blueprint, url_prefix='/test')  
+    app.register_blueprint(user_blueprint, url_prefix='/user')
     app.register_blueprint(product_blueprint, url_prefix='/product')
     app.register_blueprint(payment_blueprint, url_prefix='/payment')
     app.register_blueprint(category_blueprint, url_prefix='/category')

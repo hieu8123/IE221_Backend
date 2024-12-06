@@ -24,10 +24,22 @@ class OrderService:
     @staticmethod
     def get_all_orders():
         return Order.query.all()
+    
+    @staticmethod
+    def get_all_orders_page(page=1, per_page=10):
+        return Order.query.paginate(page=page, per_page=per_page, error_out=False)
 
     @staticmethod
     def get_order_by_id(order_id):
         return Order.query.get(order_id)
+    
+    @staticmethod
+    def get_orders_by_user_id(user_id):
+        return Order.query.filter_by(user_id=user_id).all()
+    
+    @staticmethod
+    def get_order_by_user_id_page(user_id, page=1, per_page=10):
+        return Order.query.filter_by(user_id=user_id).paginate(page=page, per_page=per_page, error_out=False)
 
     @staticmethod
     def update_order(order_id, status=None, note=None):

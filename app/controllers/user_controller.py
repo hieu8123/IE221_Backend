@@ -8,7 +8,7 @@ from app.middlewares.auth import token_required
 user_blueprint = Blueprint('user', __name__)
 
 
-@user_blueprint.route('/detail/<int: user_id>', methods=['GET'])
+@user_blueprint.route('/detail/<int:user_id>', methods=['GET'])
 @token_required
 def user_detail(user_id):
     """Xem thông tin người dùng"""
@@ -20,7 +20,7 @@ def user_detail(user_id):
 
     return jsonify(user.to_dict()), 200
 
-@user_blueprint.route('/update/<int: user_id>', methods=['PUT'])
+@user_blueprint.route('/update/<int:user_id>', methods=['PUT'])
 @token_required
 def user_update(user_id):
     """Cập nhật thông tin người dùng"""
@@ -33,9 +33,17 @@ def user_update(user_id):
     name = request.json.get('name')
     role = request.json.get('role')
     avatar = request.json.get('avatar')
-    phone = request.json.get('phone')
+    phone = request.json.get('phone', "")
+    phone = str(phone) if phone else None
 
-    updated_user = UserService.update_user(user_id, email, password, name, role, avatar, phone)
+
+    updated_user = UserService.update_user(user_id = user_id,
+                                            email = email,
+                                            password = password,
+                                            name=name,
+                                            role = role,
+                                            avatar = avatar,
+                                            phone = phone)
     if not updated_user:
         return jsonify({'message': 'Update failed'}), 500
 
@@ -60,7 +68,7 @@ def add_address():
 
     return jsonify(new_address.to_dict()), 200
 
-@user_blueprint.route('/update-address/<int: address_id>', methods=['PUT'])
+@user_blueprint.route('/update-address/<int:address_id>', methods=['PUT'])
 @token_required
 def update_address(address_id):
     """Cập nhật địa chỉ người dùng"""
@@ -85,7 +93,7 @@ def update_address(address_id):
     return jsonify(updated_address.to_dict()), 200
 
 
-@user_blueprint.route('/delete-address/<int: address_id>', methods=['DELETE'])
+@user_blueprint.route('/delete-address/<int:address_id>', methods=['DELETE'])
 @token_required
 def delete_address(address_id):
     """Xóa địa chỉ người dùng"""

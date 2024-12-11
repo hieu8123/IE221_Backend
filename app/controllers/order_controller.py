@@ -33,7 +33,7 @@ def get_all_orders():
     } for order in orders]), 200
 
 @order_blueprint.route('/<int:order_id>', methods=['GET'])
-def get_order(order_id):
+def get_order_detail(order_id):
     """ API để lấy thông tin chi tiết của một hóa đơn """
     order = OrderService.get_order_by_id(order_id)
 
@@ -66,22 +66,33 @@ def get_user_orders():
     user_id = AuthService.decode_jwt_from_cookie()[0]['id']
     page = int(request.args.get('page', 1))  # Mặc định là trang 1
     per_page = int(request.args.get('per_page', 10))  
-    orders = OrderService.get_orders_by_user_id_paginated(user_id, page, per_page)
+    status = request.args.get('status', None)
+    time = request.args.get('time', None)
+    order_id = request.args.get('order_id', None)
+    orders = OrderService.get_order_by_user_id_and_params(user_id=user_id, 
+                                                          status=status, 
+                                                          time=time, 
+                                                          order_id=order_id, 
+                                                          page=page, 
+                                                          per_page=per_page)
     return jsonify([{
-        'id': order.id,
-        'user_id': order.user_id,
-        'status': order.status,
-        'note': order.note,
-        'total': order.total,
-        'order_details': [{
-            'product_id': order_detail.product_id,
-            'price': order_detail.price,
-            'quantity': order_detail.quantity,
-        } for order_detail in order.order_details],
-        'created_at': order.created_at,
-        'updated_at': order.updated_at,
-        'transaction_id': order.transaction_id,
-    } for order in orders]), 200
+                'id': order.id,
+                'user_id': order.user_id,
+                'status': order.status,
+                'note': order.note,
+                'total': order.total,
+                'order_details': [{
+                    'product_id': order_detail.product_id,
+                    'product_name': order_detail.product.name,
+                    'product_price': order_detail.product.price,
+                    'product_image': order_detail.product.image.split(',')[0],
+                    'price': order_detail.price,
+                    'quantity': order_detail.quantity,
+                } for order_detail in order.details],
+                'created_at': order.created_at,
+                'updated_at': order.updated_at,
+                'transaction_id': order.transaction_id,
+            } for order in orders]), 200
 
 @order_blueprint.route('/create', methods=['POST'])
 @token_required
@@ -100,6 +111,12 @@ def create_order():
     (cart_item.get('product') or {}).get("price", 0) * cart_item.get("quantity", 1)
     for cart_item in cart_items
 )
+    
+    if not all([cart_items, name, phone, email, address]):
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    if cart_items == []:
+        return jsonify({"error": "Cart is empty"}), 400
 
     new_address = None
 
@@ -128,9 +145,12 @@ def create_order():
 
     CartService.clear_user_cart(user_id)
 
-    for product in [cart_item.get('product') for cart_item in cart_items]:
-        OrderService.create_order_detail(new_order.id, product.get("id"), product.get("price"), product.get("quantity"))
-        ProductService.update_product_quantity_and_buyturn(product.get("id"), product.get("quantity"))
+    for cart_item in cart_items:
+        OrderService.create_order_detail(new_order.id, cart_item.get("product").get("id"), 
+                                         cart_item.get("product").get("price"), 
+                                         cart_item.get("quantity"))
+        ProductService.update_product_quantity_and_buyturn(cart_item.get("product").get("id"),
+                                                            cart_item.get("quantity"))
 
     if new_order:
         return jsonify({
@@ -161,16 +181,54 @@ def update_order(order_id):
 
     if updated_order:
         return jsonify({
-            'id': updated_order.id,
-            'user_id': updated_order.user_id,
-            'status': updated_order.status,
-            'note': updated_order.note,
-            'total': updated_order.total,
-            'created_at': updated_order.created_at,
-            'updated_at': updated_order.updated_at,
-            'transaction_id': updated_order.transaction_id,
-        }), 200
+                'id': order.id,
+                'user_id': order.user_id,
+                'status': order.status,
+                'note': order.note,
+                'total': order.total,
+                'order_details': [{
+                    'product_id': order_detail.product_id,
+                    'product_name': order_detail.product.name,
+                    'product_price': order_detail.product.price,
+                    'product_image': order_detail.product.image.split(',')[0],
+                    'price': order_detail.price,
+                    'quantity': order_detail.quantity,
+                } for order_detail in order.details],
+                'created_at': order.created_at,
+                'updated_at': order.updated_at,
+                'transaction_id': order.transaction_id,
+            }), 200
     return jsonify({'error': 'Update order failed'}), 400
+
+@order_blueprint.route('/<int:order_id>/cancel', methods=['PUT'])
+@token_required
+def cancel_order(order_id):
+    """ API để hủy hóa đơn """
+    user_id = AuthService.decode_jwt_from_cookie()[0]['id']
+    order = OrderService.get_order_by_id(order_id)
+    if order and order.user_id == user_id:
+        updated_order = OrderService.cancel_order(order_id)
+        if updated_order:
+             return jsonify({
+                'id': order.id,
+                'user_id': order.user_id,
+                'status': order.status,
+                'note': order.note,
+                'total': order.total,
+                'order_details': [{
+                    'product_id': order_detail.product_id,
+                    'product_name': order_detail.product.name,
+                    'product_price': order_detail.product.price,
+                    'product_image': order_detail.product.image.split(',')[0],
+                    'price': order_detail.price,
+                    'quantity': order_detail.quantity,
+                } for order_detail in order.details],
+                'created_at': order.created_at,
+                'updated_at': order.updated_at,
+                'transaction_id': order.transaction_id,
+            }), 200
+        return jsonify({'error': 'Cancel order failed'}), 400
+    return jsonify({'error': 'Unauthorized'}), 403
 
 @order_blueprint.route('/<int:order_id>/delete', methods=['DELETE'])
 @admin_required

@@ -56,7 +56,7 @@ def create_payment():
         order = OrderService.get_order_by_id(order_id)
     else:
         order = OrderService.create_order(user_id = user_id, 
-                                          status="pending payment",
+                                          status="awaiting payment",
                                           note="Thanh toan don hang Hieu Store" ,
                                           name= name,
                                           phone=phone,
@@ -64,9 +64,12 @@ def create_payment():
                                           address_id=address_id,
                                           total=total_amount )
         CartService.clear_user_cart(user_id)
-        for product in [cart_item.get('product') for cart_item in cart_items]:
-            OrderService.create_order_detail(order.id, product.get("id"), product.get("price"), product.get("quantity"))
-            ProductService.update_product_quantity_and_buyturn(product.get("id"), product.get("quantity"))
+        for cart_item in cart_items:
+            OrderService.create_order_detail(order.id, cart_item.get("product").get("id"), 
+                                            cart_item.get("product").get("price"), 
+                                            cart_item.get("quantity"))
+            ProductService.update_product_quantity_and_buyturn(cart_item.get("product").get("id"),
+                                                                cart_item.get("quantity"))
     # Tạo URL thanh toán
     try:
         payment_url = VNPayService.create_payment_url(order.id,order.total, order.note, client_ip)
@@ -126,14 +129,21 @@ def request_refund():
     if order.user_id != user_id:
         return jsonify({'message': 'You are not allowed to refund this order'}), 403
     
+    if order.status != 'paid':
+        return jsonify({'message': 'You can only refund paid orders'}), 400
+    
     # Kiểm tra trạng thái đơn hàng (chỉ hoàn tiền nếu đơn hàng chưa được hoàn tiền)
     if order.status == 'refunded':
         return jsonify({'message': 'This order has already been refunded'}), 400
+    
+    if order.transaction_id is None:
+        return jsonify({'message': "The system only supports refunds for transactions made via VNpay."}), 400
 
     # Tạo yêu cầu hoàn tiền
     RefundService.create_refund_request(order.id, order.total, reason)
+    OrderService.update_order_status(order_id, 'refund requested')
 
-    return jsonify({'message': 'Refund request created successfully'}), 201
+    return jsonify({'message': 'Refund request created successfully'}), 200
 
 
 @payment_blueprint.route('/vnpay/refund/<int:refund_id>', methods=['POST'])

@@ -1,6 +1,7 @@
 from app.configs.database_configs import db
 from app.models.order import Order, OrderDetail
-from datetime import datetime
+from app.services.product_service import ProductService
+from datetime import datetime, timedelta
 
 class OrderService:
     @staticmethod
@@ -42,11 +43,54 @@ class OrderService:
         return Order.query.filter_by(user_id=user_id).paginate(page=page, per_page=per_page, error_out=False)
 
     @staticmethod
+    def get_order_by_user_id_and_params(user_id, status=None, time=None, order_id=None, page=1, per_page=10):
+        query = Order.query.filter(Order.user_id == user_id)
+
+        # Filter by status
+        if status and status != 'all':
+            query = query.filter(Order.status == status)
+
+        # Filter by time range
+        if time:
+            now = datetime.utcnow()
+            time_mapping = {
+                'day': now.replace(hour=0, minute=0, second=0, microsecond=0),
+                'week': (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0),
+                'month': now.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+                '6months': (now - timedelta(days=6 * 30)).replace(hour=0, minute=0, second=0, microsecond=0),
+                'year': now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0),
+                'all': None
+            }
+            start_time = time_mapping.get(time)
+
+            if start_time:
+                query = query.filter(Order.created_at >= start_time)
+
+        # Filter by order_id
+        if order_id:
+            query = query.filter(Order.id == order_id)
+
+        # Paginate the results
+        return query.paginate(page=page, per_page=per_page, error_out=False)
+
+
+    @staticmethod
     def update_order(order_id, status=None, note=None):
         order = Order.query.get(order_id)
+        
         if order:
             order.status = status or order.status
             order.note = note or order.note
+            order.updated_at = datetime.utcnow()
+            db.session.commit()
+            return order
+        return None
+    
+    @staticmethod
+    def cancel_order(order_id):
+        order = Order.query.get(order_id)
+        if order and order.status in ['pending', 'awaiting payment']:
+            order.status = 'cancelled'
             order.updated_at = datetime.utcnow()
             db.session.commit()
             return order
@@ -84,6 +128,11 @@ class OrderService:
 
     @staticmethod
     def create_order_detail(order_id, product_id, price, quantity):
+        product = ProductService.get_product_by_id(product_id)
+        if not product:
+            raise Exception("Product not found")
+        if product.quantity < quantity:
+            raise Exception("Not enough product in stock")
         new_order_detail = OrderDetail(
             order_id=order_id,
             product_id=product_id,

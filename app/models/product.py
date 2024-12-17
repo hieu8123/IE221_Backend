@@ -30,7 +30,9 @@ class Product(db.Model):
         images = self.image.split(',') if self.image else []
         return {'id': self.id,
                 'name': self.name,  
+                'category_id': self.category_id,
                 'category': self.category.name,
+                'brand_id': self.brand_id,
                 'brand': self.brand.name,
                 'price': self.price,
                 'oldprice': self.oldprice,

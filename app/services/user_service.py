@@ -28,23 +28,23 @@ class UserService:
         return User.query.get(user_id)
 
     @staticmethod
-    def update_user(user_id, email, name, avatar, phone, role=None, password=None):
+    def update_user(user_id, email=None, name=None, avatar=None, phone=None, role=None, password=None):
         user = User.query.get(user_id)
 
         if user:
             # Kiểm tra kiểu dữ liệu
             if not isinstance(email, str):
-                raise TypeError("email must be a string")
+                email = None
             if not isinstance(name, str):
-                raise TypeError("name must be a string")
+                name = None
             if not isinstance(avatar, str):
-                raise TypeError("avatar must be a string")
+                avatar = None
             if not isinstance(phone, str):
-                raise TypeError("phone must be a string")
+                phone = None
             if role and not isinstance(role, str):
-                raise TypeError("role must be a string")
+                role = None
             if password and not isinstance(password, str):
-                raise TypeError("password must be a string")
+                password = None
 
         if user:
             # Kiểm tra xem có thay đổi hay không
@@ -59,9 +59,9 @@ class UserService:
             if user.name != name:
                 user.name = name
                 has_changes = True
-            if role and user.role != role:
-                user.role = role
-                has_changes = True
+            # if role and user.role != role:
+            #     user.role = role
+            #     has_changes = True
             if user.avatar != avatar:
                 user.avatar = avatar
                 has_changes = True

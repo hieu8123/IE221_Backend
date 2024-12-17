@@ -16,7 +16,8 @@ class ProductService:
 
 
     @staticmethod
-    def create_product(name, price, oldprice, image, description, specification, buyturn, quantity, brand_id, category_id):
+    def create_product(name, price, oldprice, images, description, specification, buyturn, quantity, brand_id, category_id):
+        image = ','.join(images)
         new_product = Product(
             name=name,
             price=price,
@@ -151,8 +152,9 @@ class ProductService:
         return Product.query.get(product_id)
 
     @staticmethod
-    def update_product(product_id, name, price, oldprice, image, description, specification, buyturn, quantity, brand_id, category_id):
+    def update_product(product_id, name, price, oldprice, images, description, specification, buyturn, quantity, brand_id, category_id):
         product = Product.query.get(product_id)
+        image = ','.join(images)
         if product:
             product.name = name
             product.price = price

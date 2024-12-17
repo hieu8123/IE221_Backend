@@ -9,14 +9,18 @@ from app.services.address_service import AddressService
 # Tạo Blueprint cho module auth
 order_blueprint = Blueprint('order', __name__)
 
-@order_blueprint.route('/', methods=['GET'])
+@order_blueprint.route('/get-order', methods=['GET'])
 @admin_required
 def get_all_orders():
     """ API để lấy danh sách các hóa đơn """
     page = int(request.args.get('page', 1))  # Mặc định là trang 1
     per_page = int(request.args.get('per_page', 10))
-    orders = OrderService.get_all_orders_page(page, per_page)
-    return jsonify([{
+    date = request.args.get('date', None)
+    order_id = request.args.get('order_id', None)
+    pagination_orders = OrderService.get_all_orders_page(order_id=order_id,date=date,page=page, per_page=per_page)
+    return jsonify(
+        {
+        'orders':[{
         'id': order.id,
         'user_id': order.user_id,
         'status': order.status,
@@ -26,11 +30,15 @@ def get_all_orders():
                 'product_id': order_detail.product_id,
                 'price': order_detail.price,
                 'quantity': order_detail.quantity,
-            } for order_detail in order.order_details],
+            } for order_detail in order.details],
         'created_at': order.created_at,
         'updated_at': order.updated_at,
         'transaction_id': order.transaction_id,
-    } for order in orders]), 200
+    } for order in pagination_orders['orders']],
+    'total_pages': pagination_orders['total_pages'],
+    'current_page': pagination_orders['current_page']
+    }
+    ), 200
 
 @order_blueprint.route('/<int:order_id>', methods=['GET'])
 def get_order_detail(order_id):
@@ -165,7 +173,7 @@ def create_order():
         }), 200
     return jsonify({'error': 'Create order failed'}), 400
 
-@order_blueprint.route('/<int:order_id>/update', methods=['PUT'])
+@order_blueprint.route('/update/<int:order_id>', methods=['PUT'])
 @admin_required
 def update_order(order_id):
     """ API để cập nhật thông tin hóa đơn """
@@ -230,7 +238,7 @@ def cancel_order(order_id):
         return jsonify({'error': 'Cancel order failed'}), 400
     return jsonify({'error': 'Unauthorized'}), 403
 
-@order_blueprint.route('/<int:order_id>/delete', methods=['DELETE'])
+@order_blueprint.route('/delete/<int:order_id>', methods=['DELETE'])
 @admin_required
 def delete_order(order_id):
     """ API để xóa hóa đơn """

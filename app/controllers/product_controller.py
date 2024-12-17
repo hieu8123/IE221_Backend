@@ -95,7 +95,7 @@ def create_product():
                     name=product_data['name'],
                     price=product_data['price'],
                     oldprice=product_data['oldprice'],
-                    image=product_data['image'],
+                    images=product_data['images'],
                     description=product_data['description'],
                     specification=product_data['specification'],
                     buyturn=product_data.get('buyturn', 0), 
@@ -110,7 +110,7 @@ def create_product():
     # Trả về thông tin sản phẩm vừa tạo
     return jsonify(new_product.to_dict())
 
-@product_blueprint.route('/<int:product_id>/update', methods=['PUT'])
+@product_blueprint.route('/update/<int:product_id>', methods=['PUT'])
 @admin_required
 def update_product(product_id):
     """
@@ -125,7 +125,7 @@ def update_product(product_id):
                         name=product_data['name'],
                         price=product_data['price'],
                         oldprice=product_data['oldprice'],
-                        image=product_data['image'],
+                        images=product_data['images'],
                         description=product_data['description'],
                         specification=product_data['specification'],
                         buyturn=product_data.get('buyturn', 0), 
@@ -140,7 +140,7 @@ def update_product(product_id):
     # Trả về thông tin sản phẩm vừa cập nhật
     return jsonify(updated_product.to_dict())
 
-@product_blueprint.route('/<int:product_id>/delete', methods=['DELETE'])
+@product_blueprint.route('/delete/<int:product_id>', methods=['DELETE'])
 @admin_required
 def delete_product(product_id):
     """

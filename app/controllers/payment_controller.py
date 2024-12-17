@@ -146,17 +146,19 @@ def request_refund():
     return jsonify({'message': 'Refund request created successfully'}), 200
 
 
-@payment_blueprint.route('/vnpay/refund/<int:refund_id>', methods=['POST'])
+@payment_blueprint.route('/vnpay/refund/<int:order_id>', methods=['POST'])
 @admin_required
-def approve_refund(refund_id):
+def approve_refund(order_id):
     # Lấy yêu cầu hoàn tiền theo ID
-    refund_request = RefundService.get_refund_request_by_id(refund_id)
+    refund_request = RefundService.get_refund_request_by_order_id(order_id)
     if not refund_request:
         return jsonify({'message': 'Refund request not found'}), 404
     
     # Kiểm tra trạng thái yêu cầu (chỉ có thể phê duyệt yêu cầu đang chờ)
     if refund_request.status != 'pending':
         return jsonify({'message': 'This refund request is already processed'}), 400
+    
+    refund_id = refund_request.id
     
     # Thực hiện hoàn tiền qua VNPAY
     refund_result = VNPayService.create_refund(refund_request.order, refund_request.order.total, refund_request.reason)

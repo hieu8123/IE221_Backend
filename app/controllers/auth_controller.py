@@ -18,6 +18,7 @@ def login():
     # Kiểm tra thông tin đăng nhập
     user, token, error = AuthService.login(email, password)
     if error:
+        print(error)
         return jsonify({'message': error}), 401
     
     # Tạo response
@@ -32,7 +33,6 @@ def logout():
     """Xử lý đăng xuất người dùng"""
     response = make_response(jsonify({'message': 'Logout successful'}), 200)
     AuthService.logout(response)
-
     return response
 
 @auth_blueprint.route('/register', methods=['POST'])
@@ -50,9 +50,10 @@ def register():
 
     hashed_password = generate_password_hash(password)
     
-    new_user = UserService.create_user(email, hashed_password, name, role, avatar, phone)
+    new_user, error = UserService.create_user(email, hashed_password, name, role, avatar, phone)
     if not new_user:
-        return jsonify({'message': 'Register failed'}), 500
+        print(error)
+        return jsonify({'message': 'Register failed' +error}), 500
     
     token = AuthService.create_jwt(new_user.id, new_user.name, new_user.role)
 

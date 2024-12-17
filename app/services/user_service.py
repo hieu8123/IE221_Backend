@@ -5,6 +5,9 @@ from datetime import datetime
 class UserService:
     @staticmethod
     def create_user(email, password, name, role, avatar=None, phone=None):
+        user = User.query.filter_by(email=email).first()
+        if user:
+            return None, 'Email already exists'
         new_user = User(
             email=email,
             password=password,
@@ -17,7 +20,7 @@ class UserService:
         )
         db.session.add(new_user)
         db.session.commit()
-        return new_user
+        return new_user, None
 
     @staticmethod
     def get_all_users():

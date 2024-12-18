@@ -145,7 +145,7 @@ def create_order():
         name=name,
         phone=phone,
         email=email,
-        status="paid",
+        status="pending",
         note=order_info,
         address_id=new_address.id,
         total=total_amount,

@@ -4,7 +4,7 @@ from app.middlewares.auth import token_required, admin_required
 
 
 # Tạo Blueprint cho module auth
-category_blueprint = Blueprint('categoríe', __name__)
+category_blueprint = Blueprint('categories', __name__)
 
 @category_blueprint.route('/', methods=['GET'])
 def get_app_categories():

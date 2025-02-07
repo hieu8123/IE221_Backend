@@ -19,11 +19,16 @@ def get_products():
 
     # Lấy các tham số bộ lọc (name, category_id, brand_id)
     name = request.args.get('name')  # Tìm kiếm theo tên
+    max_price = request.args.get('max_price') # Lọc theo khoảng giá
+    min_price = request.args.get('min_price') # Lọc theo khoảng giá
+    price_range = None
+    if max_price and min_price:
+        price_range = min_price + '-' + max_price
     category_id = request.args.get('category_id', type=int)  # Lọc theo category_id
     brand_id = request.args.get('brand_id', type=int)  # Lọc theo brand_id
 
     # Lấy tham số sắp xếp
-    sort_by = request.args.get('sort_by')  # 'price' hoặc 'created_at'
+    sort_by = request.args.get('sort_by')  # 'price' hoặc 'created_at' hoặc 'buyturn'
     sort_order = request.args.get('sort_order', 'asc')  # 'asc' hoặc 'desc'
 
     # Gọi service để truy vấn sản phẩm
@@ -31,6 +36,7 @@ def get_products():
         page=page,
         per_page=per_page,
         name=name,
+        price_range=price_range,
         category_id=category_id,
         brand_id=brand_id,
         sort_by=sort_by,
@@ -44,7 +50,19 @@ def get_products():
         'total': products_paginated.total,
         'total_pages': products_paginated.pages,
         'products': [
-            product.to_dict() 
+            {'id': product.id,
+                'name': product.name,  
+                'category': product.category.name,
+                'brand': product.brand.name,
+                'price': product.price,
+                'oldprice': product.oldprice,
+                'images': product.image.split(',') if product.image else [],
+                'specification': product.specification,
+                'buyturn': product.buyturn,
+                'quantity': product.quantity,
+                'created_at': product.created_at,
+                'updated_at': product.updated_at}
+
             for product in products_paginated.items
         ]
     })
@@ -77,7 +95,7 @@ def create_product():
                     name=product_data['name'],
                     price=product_data['price'],
                     oldprice=product_data['oldprice'],
-                    image=product_data['image'],
+                    images=product_data['images'],
                     description=product_data['description'],
                     specification=product_data['specification'],
                     buyturn=product_data.get('buyturn', 0), 
@@ -92,7 +110,7 @@ def create_product():
     # Trả về thông tin sản phẩm vừa tạo
     return jsonify(new_product.to_dict())
 
-@product_blueprint.route('/<int:product_id>/update', methods=['PUT'])
+@product_blueprint.route('/update/<int:product_id>', methods=['PUT'])
 @admin_required
 def update_product(product_id):
     """
@@ -107,7 +125,7 @@ def update_product(product_id):
                         name=product_data['name'],
                         price=product_data['price'],
                         oldprice=product_data['oldprice'],
-                        image=product_data['image'],
+                        images=product_data['images'],
                         description=product_data['description'],
                         specification=product_data['specification'],
                         buyturn=product_data.get('buyturn', 0), 
@@ -122,7 +140,7 @@ def update_product(product_id):
     # Trả về thông tin sản phẩm vừa cập nhật
     return jsonify(updated_product.to_dict())
 
-@product_blueprint.route('/<int:product_id>/delete', methods=['DELETE'])
+@product_blueprint.route('/delete/<int:product_id>', methods=['DELETE'])
 @admin_required
 def delete_product(product_id):
     """
@@ -137,4 +155,16 @@ def delete_product(product_id):
     # Trả về thông báo xóa thành công
     return jsonify({'message': 'Delete product successfully!'})
 
+@product_blueprint.route('/<int:product_id>/recommend', methods=['get'])
+def recommend_products(product_id):
+    """
+    API để gợi ý sản phẩm liên quan dựa trên sản phẩm đang xem.
+    """
+    # Gọi service để gợi ý sản phẩm liên quan
+    related_products = ProductService.get_recommend_products(product_id)
 
+    # Trả về danh sách sản phẩm liên quan
+    return jsonify([
+        product.to_dict()
+        for product in related_products
+    ]), 200

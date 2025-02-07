@@ -20,6 +20,10 @@ class RefundService:
         return RefundRequest.query.get(refund_id)
     
     @staticmethod
+    def get_refund_request_by_order_id(order_id):
+        return RefundRequest.query.filter_by(order_id=order_id).first()
+    
+    @staticmethod
     def update_refund_request_status(refund_id, status):
         refund_request = RefundRequest.query.get(refund_id)
         refund_request.status = status

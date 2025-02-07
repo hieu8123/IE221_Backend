@@ -9,13 +9,19 @@ class Order(db.Model):
     note = db.Column(db.Text, nullable=True)
     total = db.Column(db.Integer, nullable=True)
     transaction_id = db.Column(db.String(255), nullable=True)
+    name = db.Column(db.String(255), nullable=True)
+    phone = db.Column(db.String(20), nullable=True)
+    email = db.Column(db.String(255), nullable=True)    
+    address_id = db.Column(db.Integer, db.ForeignKey('addresses.id'), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
 
     # Relationships
     details = db.relationship('OrderDetail', back_populates='order', cascade="all, delete-orphan")
     user = db.relationship('User', back_populates='orders')
     refund_request = db.relationship('RefundRequest', back_populates='order')
+    address = db.relationship('Address', back_populates='orders')
 
 
 class OrderDetail(db.Model):
